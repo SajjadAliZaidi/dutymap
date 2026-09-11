@@ -241,6 +241,43 @@ main {
   color: #999;
 }
 
+.log-sheets {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.log-sheets h3 {
+  padding: 1rem 1.25rem 0;
+  font-size: 1rem;
+  color: #16213e;
+}
+
+.log-sheets--empty {
+  padding: 2rem;
+  text-align: center;
+  border: 2px dashed #d1d5db;
+  color: #999;
+}
+
+.log-sheets--empty p {
+  font-size: 0.875rem;
+}
+
+.log-sheet {
+  padding: 1rem 1.25rem;
+}
+
+.log-sheet + .log-sheet {
+  border-top: 1px solid #e5e7eb;
+}
+
+.log-sheet svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .placeholder-box {
   background: #fff;
   border-radius: 8px;

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import LocationField from './LocationField'
+import LogSheets from './LogSheets'
 import TripMap from './TripMap'
 import { createTrip } from './api'
 import { BUILT_BY } from './branding'
@@ -141,10 +142,7 @@ function App() {
 
         <div className="right-panel">
           <TripMap route={tripData?.route} />
-          <div className="placeholder-box">
-            <h3>Log Sheets</h3>
-            <p>ELD log sheets will go here</p>
-          </div>
+          <LogSheets logs={tripData?.logs} />
         </div>
       </main>
 
