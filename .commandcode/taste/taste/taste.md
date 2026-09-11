@@ -8,3 +8,5 @@
 - Wants the agent to act as a proactive senior engineer: beyond the specific request, look for and fix code-cleanliness problems (over-long files, functions placed where they needlessly expand a file's scope, duplicated logic) instead of just making the minimal change. Confidence: 0.85
 - Prefers small, single-purpose files — dislikes long files and expects logic to be extracted into dedicated modules (API/client layer, shared form config + validation, focused components, backend service layer) rather than accumulating in one file. Confidence: 0.7
 - Expects HTTP client code to be defensive: validate the response (status/content-type) before parsing and report server errors distinctly from connectivity failures rather than conflating a 5xx with "can't reach the backend". Confidence: 0.6
+- Prefers autocomplete/search inputs to fetch suggestions only on explicit user action (button click, Enter, or blur) rather than on every keystroke, to avoid excessive API calls. Confidence: 0.8
+- Expects empty/no-match API responses to be surfaced explicitly in the UI (e.g., "No matches found") instead of silently leaving a blank state. Confidence: 0.8

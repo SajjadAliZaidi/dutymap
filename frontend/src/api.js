@@ -1,4 +1,5 @@
 const API_URL = 'http://localhost:8000/api/trips/'
+const GEOCODE_URL = 'http://localhost:8000/api/geocode/'
 
 export class ApiError extends Error {}
 
@@ -56,4 +57,31 @@ export async function createTrip(payload) {
   }
 
   return data
+}
+
+export async function searchLocations(query) {
+  const trimmed = query.trim()
+  if (!trimmed) return []
+
+  let res
+  try {
+    res = await fetch(`${GEOCODE_URL}?q=${encodeURIComponent(trimmed)}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    })
+  } catch (cause) {
+    throw new ApiError('Failed to connect to backend. Is it running on port 8000?', { cause })
+  }
+
+  const data = await readBody(res)
+
+  if (!res.ok) {
+    throw new ApiError(formatApiError(data, res.status))
+  }
+
+  if (!data || !Array.isArray(data.suggestions)) {
+    throw new ApiError('Backend returned an unexpected geocoding response')
+  }
+
+  return data.suggestions
 }

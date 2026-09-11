@@ -1,4 +1,5 @@
 import { LATLONG, PLACE } from './tripForm'
+import AutocompleteInput from './AutocompleteInput'
 
 const PinIcon = () => (
   <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
@@ -59,11 +60,9 @@ export default function LocationField({
       </div>
 
       {mode === PLACE ? (
-        <input
-          type="text"
-          name={name}
+        <AutocompleteInput
           value={value}
-          onChange={(e) => onPlaceChange(name, e.target.value)}
+          onChange={(next) => onPlaceChange(name, next)}
           placeholder={placeholder}
           required
         />

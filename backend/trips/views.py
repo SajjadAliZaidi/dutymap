@@ -3,8 +3,23 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from .exceptions import GeocodingError, RoutingError
+from .routing import search_locations
 from .serializers import TripSerializer
 from .services import process_trip
+
+
+@api_view(["GET"])
+def geocode_search(request):
+    query = request.GET.get("q", "").strip()
+    if not query:
+        return Response({"suggestions": []}, status=status.HTTP_200_OK)
+
+    try:
+        suggestions = search_locations(query, limit=5)
+    except GeocodingError as e:
+        return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+    return Response({"suggestions": suggestions}, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])

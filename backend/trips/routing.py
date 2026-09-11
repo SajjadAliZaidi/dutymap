@@ -35,6 +35,38 @@ def geocode(location: str) -> dict:
     }
 
 
+def search_locations(query: str, limit: int = 5) -> list[dict]:
+    """Search Nominatim for address suggestions.
+
+    Returns a list of {"lat": float, "lon": float, "display_name": str}.
+    Raises GeocodingError on failure.
+    """
+    if not query or not query.strip():
+        return []
+
+    try:
+        resp = requests.get(
+            NOMINATIM_URL,
+            params={"q": query, "format": "json", "limit": limit},
+            headers=HEADERS,
+            timeout=TIMEOUT_SECONDS,
+        )
+        resp.raise_for_status()
+    except requests.Timeout:
+        raise GeocodingError(f"Geocoding search timed out for: {query}")
+    except requests.RequestException as e:
+        raise GeocodingError(f"Geocoding search error for {query}: {e}")
+
+    return [
+        {
+            "lat": float(r["lat"]),
+            "lon": float(r["lon"]),
+            "display_name": r.get("display_name", query),
+        }
+        for r in resp.json()
+    ]
+
+
 def fetch_route(coords: list[dict]) -> dict:
     """Get driving route from OSRM.
 
@@ -42,6 +74,7 @@ def fetch_route(coords: list[dict]) -> dict:
     Returns {"geometry": GeoJSON, "distance_miles": float, "duration_hours": float}.
     Raises RoutingError on failure.
     """
+
     coord_str = ";".join(f"{c['lon']},{c['lat']}" for c in coords)
     url = f"{OSRM_URL}/{coord_str}?overview=full&geometries=geojson"
 

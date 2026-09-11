@@ -44,6 +44,7 @@ npm run dev
 
 | Method | Path             | Description                                   |
 | ------ | ---------------- | --------------------------------------------- |
+| GET    | `/api/geocode/?q=...` | Search Nominatim for address suggestions      |
 | POST   | `/api/trips/`    | Create a trip, geocode it, and calculate route |
 
 `POST /api/trips/` accepts:
