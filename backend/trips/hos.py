@@ -33,13 +33,6 @@ FUEL_STOP_LENGTH = 0.5
 FUEL_EVERY_MILES = 1000
 
 
-def _estimate_on_duty_remaining(driving_hours: float, distance_miles: float, extra_stops_hours: float = 0.0) -> float:
-    """Rough estimate of on-duty hours still needed (for cycle restart check)."""
-    breaks = (driving_hours / BREAK_AFTER_DRIVING) * BREAK_LENGTH
-    fuel_stops = (distance_miles / FUEL_EVERY_MILES) * FUEL_STOP_LENGTH
-    return driving_hours + extra_stops_hours + breaks + fuel_stops
-
-
 class _HosState:
     """Mutable scheduling state threaded through both driving legs and stops.
 
@@ -72,13 +65,8 @@ class _HosState:
             self.cycle_used = 0
 
 
-def _drive_leg(state: _HosState, driving_hours: float, distance_miles: float, extra_stops_hours: float):
-    """Schedule one driving leg, mutating `state` in place.
-
-    `extra_stops_hours` is the on-duty time known to follow this leg before
-    the next rest decision (e.g. the pickup or drop-off stop), so the 34-hr
-    restart / cycle checks account for it.
-    """
+def _drive_leg(state: _HosState, driving_hours: float, distance_miles: float):
+    """Schedule one driving leg, mutating `state` in place."""
     if driving_hours <= 0.01:
         return
 
@@ -89,20 +77,26 @@ def _drive_leg(state: _HosState, driving_hours: float, distance_miles: float, ex
     distance_left = distance_miles
 
     while driving_left > 0.01:
+        # The 70-hour/8-day cycle is a real-time, day-by-day constraint, not a
+        # whole-trip lookahead: a driver may not go back on duty once their
+        # rolling cycle total is (essentially) at 70, but plenty of remaining
+        # cycle budget is not a reason to restart early. `state.cycle_used` is
+        # kept up to date in real time (see the driving/break/fuel-stop
+        # increments below), so it already reflects everything on duty so far,
+        # today included — no separate lookahead estimate is needed here.
+        at_cycle_limit = state.cycle_used >= CYCLE_LIMIT - 0.01
+
         # Between driving days: check 34-hr restart first (it subsumes the 10-hr rest)
         if state.need_rest:
-            on_duty_remaining = _estimate_on_duty_remaining(driving_left, distance_left, extra_stops_hours)
-            if state.cycle_used + on_duty_remaining > CYCLE_LIMIT:
+            if at_cycle_limit:
                 # 34-hr restart satisfies the 10-hr rest requirement — skip the rest
                 state.take_rest(RESTART_OFF_DUTY, "34-hr restart", reset_cycle=True)
             else:
                 state.take_rest(OFF_DUTY_BETWEEN_DAYS, "10-hr rest")
 
         # 34-hr restart check at the start of a fresh day (need_rest is already False here)
-        elif state.day_driving == 0 and state.day_on_duty == 0:
-            on_duty_remaining = _estimate_on_duty_remaining(driving_left, distance_left, extra_stops_hours)
-            if state.cycle_used + on_duty_remaining > CYCLE_LIMIT:
-                state.take_rest(RESTART_OFF_DUTY, "34-hr restart", reset_cycle=True)
+        elif state.day_driving == 0 and state.day_on_duty == 0 and at_cycle_limit:
+            state.take_rest(RESTART_OFF_DUTY, "34-hr restart", reset_cycle=True)
 
         # Drive loop for the current day, continuing from wherever this day's
         # counters (day_driving/day_on_duty/break_taken) already stand.
@@ -132,8 +126,13 @@ def _drive_leg(state: _HosState, driving_hours: float, distance_miles: float, ex
             until_11h = DAY_DRIVING_LIMIT - state.day_driving
             until_break = BREAK_AFTER_DRIVING - state.day_driving if not state.break_taken else until_11h
             until_on_duty_limit = DAY_ON_DUTY_LIMIT - state.day_on_duty - BREAK_LENGTH
+            # Stop driving early if continuing would push the rolling 70-hour
+            # cycle total past its limit, even if the 11h/14h day caps haven't
+            # been hit yet. `state.cycle_used` already includes today's on-duty
+            # time so far, so no separate day accumulator needs adding here.
+            until_cycle_limit = CYCLE_LIMIT - state.cycle_used
 
-            drive_for = min(driving_left, until_11h, until_break, until_fuel, until_on_duty_limit)
+            drive_for = min(driving_left, until_11h, until_break, until_fuel, until_on_duty_limit, until_cycle_limit)
             drive_for = max(0, round(drive_for, 2))
             if drive_for <= 0.01:
                 break
@@ -199,9 +198,9 @@ def calculate_hos(
 
     state = _HosState(current_cycle_used)
 
-    _drive_leg(state, leg1_driving_hours, leg1_distance_miles, extra_stops_hours=PICKUP_HOURS + leg2_driving_hours + DROPOFF_HOURS)
+    _drive_leg(state, leg1_driving_hours, leg1_distance_miles)
     _add_on_duty_stop(state, PICKUP_HOURS, "Pickup")
-    _drive_leg(state, leg2_driving_hours, leg2_distance_miles, extra_stops_hours=DROPOFF_HOURS)
+    _drive_leg(state, leg2_driving_hours, leg2_distance_miles)
     _add_on_duty_stop(state, DROPOFF_HOURS, "Drop-off")
 
     return state.segments
@@ -253,11 +252,19 @@ if __name__ == "__main__":
     print("\n  ✓ PASS")
 
     print("\n\n" + "=" * 60)
-    print("TEST 3: High cycle — 34-hr restart (4h + 5h drive, 62h used)")
+    print("TEST 3: High cycle — 34-hr restart fires mid-trip, not upfront (4h + 5h drive, 62h used)")
     print("=" * 60)
     segs = calculate_hos(4.0, 240.0, 5.0, 300.0, 62.0)
     print_schedule(segs)
     assert any(s.label == "34-hr restart" for s in segs)
+    # The old whole-trip-estimate bug fired the restart as segs[0], before any
+    # driving. With 62h used and real 70h room to fill, the driver can legally
+    # drive part of this trip first — the restart must show up only once the
+    # real cumulative cycle total gets there, not immediately.
+    assert segs[0].status == "driving", f"restart fired before any driving: {segs[0]}"
+    restart_idx = next(i for i, s in enumerate(segs) if s.label == "34-hr restart")
+    assert any(s.status == "driving" for s in segs[:restart_idx]), \
+        "expected at least one driving segment before the restart"
     assert sum(s.duration for s in segs if s.status == "driving") == 9.0
     assert len([s for s in segs if s.label == "Pickup"]) == 1
     assert len([s for s in segs if s.label == "Drop-off"]) == 1
@@ -276,7 +283,7 @@ if __name__ == "__main__":
     print("\n  ✓ PASS")
 
     print("\n\n" + "=" * 60)
-    print("TEST 5: No rest stacking (10h + 10h drive, 1200mi total, 58h used)")
+    print("TEST 5: No rest stacking, restart only once cycle is genuinely exhausted (10h + 10h drive, 1200mi total, 58h used)")
     print("=" * 60)
     segs = calculate_hos(10.0, 600.0, 10.0, 600.0, 58.0)
     print_schedule(segs)
@@ -284,6 +291,7 @@ if __name__ == "__main__":
     off_duty_days = [s.day_number for s in segs if s.status == "off_duty"]
     assert len(off_duty_days) == len(set(off_duty_days)), \
         f"Stacked off-duty on same day: {off_duty_days}"
+    assert segs[0].status == "driving", f"restart fired before any driving: {segs[0]}"
     assert sum(s.duration for s in segs if s.status == "driving") == 20.0
     assert len([s for s in segs if s.label == "Pickup"]) == 1
     assert len([s for s in segs if s.label == "Drop-off"]) == 1
@@ -300,4 +308,27 @@ if __name__ == "__main__":
     order = [s.label if s.status != "driving" else "Driving" for s in segs]
     assert order == ["Driving", "Pickup", "Driving", "Drop-off"], order
     assert sum(s.duration for s in segs if s.status == "driving") == 5.0
+    print("\n  ✓ PASS")
+
+    print("\n\n" + "=" * 60)
+    print("TEST 7 (34-hr restart design-bug repro): cycle_used=25, ~45h driving across ~2390mi")
+    print("=" * 60)
+    # Whole-trip estimate bug: 25 + (~50h estimated for the whole trip) > 70,
+    # so a 34-hr restart used to fire as the very first segment, before a
+    # single mile was driven — even though 25h used leaves 45h of real cycle
+    # room, enough for several full legal driving days first.
+    segs = calculate_hos(20.0, 1000.0, 25.0, 1390.0, 25.0)
+    print_schedule(segs)
+    print("\nRaw segments:")
+    for s in segs:
+        print(f"  {s!r}")
+    assert segs[0].status == "driving", f"restart fired before any driving: {segs[0]}"
+    restart_idx = next((i for i, s in enumerate(segs) if s.label == "34-hr restart"), None)
+    assert restart_idx is not None, "expected a 34-hr restart once the cycle is genuinely exhausted"
+    driving_days_before_restart = {s.day_number for s in segs[:restart_idx] if s.status == "driving"}
+    assert len(driving_days_before_restart) >= 2, \
+        f"expected multiple driving days before the restart, got {driving_days_before_restart}"
+    assert sum(s.duration for s in segs if s.status == "driving") == 45.0
+    assert len([s for s in segs if s.label == "Pickup"]) == 1
+    assert len([s for s in segs if s.label == "Drop-off"]) == 1
     print("\n  ✓ PASS")
