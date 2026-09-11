@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from .exceptions import GeocodingError, RoutingError
+from .models import Trip
 from .routing import search_locations
 from .serializers import TripSerializer
 from .services import process_trip
@@ -43,3 +44,12 @@ def create_trip(request):
         return Response({"error": str(e)}, status=code)
 
     return Response(TripSerializer(trip).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+def retrieve_trip(request, pk):
+    try:
+        trip = Trip.objects.get(pk=pk)
+    except Trip.DoesNotExist:
+        return Response({"error": "Trip not found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response(TripSerializer(trip).data)
