@@ -97,7 +97,87 @@ main {
   box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
 }
 
-.trip-form button {
+.location-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.location-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.location-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0;
+}
+
+.mode-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid #e4e7ec;
+  border-radius: 999px;
+  background: #eef1f5;
+}
+
+.mode-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: calc(100% - 4px);
+  border-radius: 999px;
+  background: #16213e;
+  transition: transform 0.18s ease;
+}
+
+.mode-switch[data-active="latlong"] .mode-switch-thumb {
+  transform: translateX(24px);
+}
+
+.mode-switch-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #8a93a3;
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.mode-switch-btn:hover {
+  color: #16213e;
+}
+
+.mode-switch-btn.active,
+.mode-switch-btn.active:hover {
+  color: #fff;
+}
+
+.coord-inputs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.coord-inputs input {
+  flex: 1;
+}
+
+.trip-form button[type="submit"] {
   width: 100%;
   padding: 0.7rem;
   background: #16213e;
@@ -108,11 +188,11 @@ main {
   cursor: pointer;
 }
 
-.trip-form button:hover {
+.trip-form button[type="submit"]:hover {
   background: #1a1a2e;
 }
 
-.trip-form button:disabled {
+.trip-form button[type="submit"]:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

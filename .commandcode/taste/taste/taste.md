@@ -1,0 +1,7 @@
+# Taste
+- Wants unused/dead code removed rather than left in place — flags endpoints, routes, and constants nothing actually consumes and expects them deleted (including their now-orphaned dependencies and docs). Confidence: 0.75
+- Likes to add a personal signature to projects (e.g., "Built by" credits, console easter eggs) rather than shipping them generically. Confidence: 0.55
+- Extends the personal signature with social/contact links (e.g., LinkedIn) next to the portfolio credit, and wants their icons to "go with the website theme" — monochrome glyphs that inherit the site's existing link colors rather than brand-colored logos or new icon dependencies. Confidence: 0.6
+- Keeps identity/branding constants (name, portfolio, social URLs) in a single shared branding module that both frontend and backend import, rather than inlining the strings at each use site. Confidence: 0.45
+- Prefers compact, elegant UI controls over bulky ones — explicitly calls clunky implementations "ugly" and wants widgets small, themed (site navy accent), and self-explanatory, e.g. a small pill/toggle switch instead of a pair of text buttons. Confidence: 0.5
+- Expects data-entry fields to be unambiguous about their expected format — questioned whether bare decimal-degree Lat/Long inputs should instead include explicit direction (N/S/E/W), i.e. prefers inputs where the convention is spelled out rather than implicit. Confidence: 0.4

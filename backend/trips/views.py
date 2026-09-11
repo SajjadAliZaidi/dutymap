@@ -15,21 +15,26 @@ def create_trip(request):
 
     trip = serializer.save()
 
-    # Geocode all three locations
-    locations = {
-        "current": trip.current_location,
-        "pickup": trip.pickup_location,
-        "dropoff": trip.dropoff_location,
+    # Resolve coordinates — use provided lat/lon or geocode the place name
+    fields = {
+        "current": ("current_location", "current_lat", "current_lon"),
+        "pickup": ("pickup_location", "pickup_lat", "pickup_lon"),
+        "dropoff": ("dropoff_location", "dropoff_lat", "dropoff_lon"),
     }
     coords = {}
 
-    for key, loc in locations.items():
-        try:
-            coords[key] = geocode(loc)
-        except GeocodingError as e:
-            trip.route_error = str(e)
-            trip.save()
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    for key, (loc_field, lat_field, lon_field) in fields.items():
+        lat = serializer.validated_data.get(lat_field)
+        lon = serializer.validated_data.get(lon_field)
+        if lat is not None and lon is not None:
+            coords[key] = {"lat": lat, "lon": lon, "display_name": f"{lat}, {lon}"}
+        else:
+            try:
+                coords[key] = geocode(trip.__getattribute__(loc_field))
+            except GeocodingError as e:
+                trip.route_error = str(e)
+                trip.save()
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     # Save coordinates
     trip.current_coords = {"lat": coords["current"]["lat"], "lon": coords["current"]["lon"]}
