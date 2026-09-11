@@ -247,12 +247,6 @@ main {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.log-sheets h3 {
-  padding: 1rem 1.25rem 0;
-  font-size: 1rem;
-  color: #16213e;
-}
-
 .log-sheets--empty {
   padding: 2rem;
   text-align: center;
@@ -264,12 +258,35 @@ main {
   font-size: 0.875rem;
 }
 
-.log-sheet {
-  padding: 1rem 1.25rem;
+.log-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.log-sheet + .log-sheet {
-  border-top: 1px solid #e5e7eb;
+.log-tab {
+  flex: 1;
+  padding: 0.7rem 0.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.log-tab:hover {
+  color: #16213e;
+}
+
+.log-tab--active {
+  color: #16213e;
+  border-bottom-color: #16213e;
+}
+
+.log-sheet {
+  padding: 1rem 1.25rem;
 }
 
 .log-sheet svg {
