@@ -10,3 +10,9 @@
 - Expects HTTP client code to be defensive: validate the response (status/content-type) before parsing and report server errors distinctly from connectivity failures rather than conflating a 5xx with "can't reach the backend". Confidence: 0.6
 - Prefers autocomplete/search inputs to fetch suggestions only on explicit user action (button click, Enter, or blur) rather than on every keystroke, to avoid excessive API calls. Confidence: 0.8
 - Expects empty/no-match API responses to be surfaced explicitly in the UI (e.g., "No matches found") instead of silently leaving a blank state. Confidence: 0.8
+- Wants the agent to inspect the actual project structure and files first, rather than assuming file paths, settings, or conventions. Confidence: 0.85
+- Wants to be asked for confirmation before overwriting existing custom configuration (e.g., `settings.py` `DATABASES`/`MIDDLEWARE` blocks). Confidence: 0.95
+- Prefers deployment-specific values (domains, URLs) to use placeholders with an explicit reminder to update them after the first deploy. Confidence: 0.7
+- Prefers SQLite for deployment and wants to keep the same database across local and production-like environments; explicitly rejects switching to PostgreSQL just for deployment. Confidence: 0.95
+- Prefers secrets and deployment-specific configuration to be read from environment variables rather than hardcoded. Confidence: 0.8
+- Wants suggestions from other assistants/tools (e.g., Claude Code) independently reviewed and verified before being applied. Confidence: 0.85

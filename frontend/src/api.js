@@ -1,5 +1,7 @@
-const API_URL = 'http://localhost:8000/api/trips/'
-const GEOCODE_URL = 'http://localhost:8000/api/geocode/'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+const TRIPS_URL = `${API_BASE}/trips/`
+const GEOCODE_URL = `${API_BASE}/geocode/`
+
 
 export class ApiError extends Error {}
 
@@ -37,7 +39,7 @@ async function readBody(res) {
 export async function createTrip(payload) {
   let res
   try {
-    res = await fetch(API_URL, {
+    res = await fetch(TRIPS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
