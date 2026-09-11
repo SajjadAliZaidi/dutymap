@@ -18,6 +18,9 @@ class Trip(models.Model):
     dropoff_coords = models.JSONField(null=True, blank=True)
     route_error = models.CharField(max_length=500, blank=True, default="")
 
+    # Computed HOS log sheets (populated during trip processing)
+    logs = models.JSONField(default=list, blank=True)
+
     def __str__(self):
         pickup = self.pickup_location or self.pickup_coords or "unknown pickup"
         dropoff = self.dropoff_location or self.dropoff_coords or "unknown dropoff"

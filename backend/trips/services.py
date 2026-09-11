@@ -1,5 +1,8 @@
 from .constants import LOCATION_FIELDS
+from .hos import calculate_hos
+from .log_sheets import split_by_calendar_day
 from .routing import fetch_route, geocode
+from .svg_log import render_log_sheet
 
 
 def resolve_stop_coordinates(trip, validated_data):
@@ -20,6 +23,29 @@ def resolve_stop_coordinates(trip, validated_data):
     return coords
 
 
+def _generate_log_sheets(trip):
+    """Compute HOS segments, split by calendar day, render SVGs, save to trip.logs."""
+    if (
+        trip.duration_hours is None
+        or trip.distance_miles is None
+        or trip.start_datetime is None
+    ):
+        return
+
+    segments = calculate_hos(
+        trip.duration_hours, trip.distance_miles, trip.current_cycle_used
+    )
+    if not segments:
+        return
+
+    day_groups = split_by_calendar_day(segments, trip.start_datetime)
+
+    trip.logs = [
+        {"date": day.isoformat(), "svg": render_log_sheet(day, segs)}
+        for day, segs in day_groups.items()
+    ]
+
+
 def process_trip(trip, validated_data):
     """Resolve the stops and attach the driving route to `trip`.
 
@@ -38,6 +64,9 @@ def process_trip(trip, validated_data):
     trip.route_geometry = route["geometry"]
     trip.distance_miles = route["distance_miles"]
     trip.duration_hours = route["duration_hours"]
+
+    _generate_log_sheets(trip)
+
     trip.save()
 
     return trip
