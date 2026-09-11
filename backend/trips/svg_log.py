@@ -116,31 +116,40 @@ def render_log_sheet(day_date: date, segments: list[Segment]) -> str:
 
     # --- Duty-status line ---
     if segments:
-        # Build path: start at left edge with first segment's status
-        first_status = segments[0].status
-        start_x = GRID_LEFT
-        start_y = _row_y(first_status)
+        # Determine starting point. If the first segment doesn't start at
+        # midnight, draw an off-duty lead-in from the left edge.
+        first_seg = segments[0]
+        first_y = _row_y(first_seg.status)
+        lead_in = first_seg.start > 0
+        start_y = _row_y("off_duty") if lead_in else first_y
 
-        # If first segment doesn't start at midnight, prepend an off-duty lead-in
-        if segments[0].start > 0:
-            first_status = "off_duty"
-            start_y = _row_y("off_duty")
-
-        path_d = [f"M {start_x:.1f} {start_y:.1f}"]
+        path_d = [f"M {GRID_LEFT:.1f} {start_y:.1f}"]
+        prev_x = GRID_LEFT
+        prev_y = start_y
 
         for seg in segments:
             sy = _row_y(seg.status)
             sx = _hour_x(seg.start)
             ex = _hour_x(seg.end)
 
-            # Horizontal line across this segment
-            path_d.append(f"L {sx:.1f} {sy:.1f}")
+            # Horizontal to segment start at current row
+            if prev_x != sx:
+                path_d.append(f"L {sx:.1f} {prev_y:.1f}")
+            # Vertical step into this segment's status row
+            if prev_y != sy:
+                path_d.append(f"L {sx:.1f} {sy:.1f}")
+            # Horizontal through the segment
             path_d.append(f"L {ex:.1f} {sy:.1f}")
 
-        # Extend to right edge if last segment ends before midnight
-        last_end = segments[-1].end
-        if last_end < 24:
-            path_d.append(f"L {GRID_RIGHT:.1f} {sy:.1f}")
+            prev_x = ex
+            prev_y = sy
+
+        # Extend to right edge at off-duty if the last segment ends before midnight
+        if prev_x < GRID_RIGHT:
+            off_y = _row_y("off_duty")
+            if prev_y != off_y:
+                path_d.append(f"L {prev_x:.1f} {off_y:.1f}")
+            path_d.append(f"L {GRID_RIGHT:.1f} {off_y:.1f}")
 
         parts.append(
             f'<path d="{" ".join(path_d)}" fill="none" '

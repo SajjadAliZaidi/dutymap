@@ -16,3 +16,6 @@
 - Prefers SQLite for deployment and wants to keep the same database across local and production-like environments; explicitly rejects switching to PostgreSQL just for deployment. Confidence: 0.95
 - Prefers secrets and deployment-specific configuration to be read from environment variables rather than hardcoded. Confidence: 0.8
 - Wants suggestions from other assistants/tools (e.g., Claude Code) independently reviewed and verified before being applied. Confidence: 0.85
+- When debugging, wants raw printed function output/actual numbers, not summaries or interpretations, to compare against UI behavior. Confidence: 0.95
+- Provides exact, reproducible test parameters when debugging and expects the agent to run them verbatim to compare against UI behavior. Confidence: 0.9
+- Notices and wants small numerical/floating-point artifacts cleaned up (e.g., rounding a midnight boundary to the nearest whole second instead of leaving a ~120 ms drift). Confidence: 0.85
