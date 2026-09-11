@@ -1,11 +1,7 @@
 import requests
 
+from .constants import HEADERS, NOMINATIM_URL, OSRM_URL, TIMEOUT_SECONDS
 from .exceptions import GeocodingError, RoutingError
-
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-OSRM_URL = "http://router.project-osrm.org/route/v1/driving"
-HEADERS = {"User-Agent": "DutyMapELD/1.0"}
-TIMEOUT_SECONDS = 10
 
 
 def geocode(location: str) -> dict:
