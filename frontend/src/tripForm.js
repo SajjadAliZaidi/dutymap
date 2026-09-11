@@ -52,7 +52,7 @@ export function buildTripPayload(form, modes, coords) {
   const payload = {
     ...form,
     current_cycle_used: Number.parseFloat(form.current_cycle_used),
-    start_datetime: form.start_datetime ? new Date(form.start_datetime).toISOString() : '',
+    start_datetime: form.start_datetime || '',
   }
 
   for (const { key } of LOCATIONS) {
