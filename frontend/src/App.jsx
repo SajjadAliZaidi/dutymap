@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import TripMap from './TripMap'
+import { BUILT_BY } from './branding'
 import './App.css'
 
 const API_URL = 'http://localhost:8000/api/trips/'
@@ -133,6 +134,16 @@ function App() {
           </div>
         </div>
       </main>
+
+      <footer className="site-footer">
+        <span>DutyMap · ELD Trip Planner</span>
+        <span>
+          Built by{' '}
+          <a href={BUILT_BY.portfolio} target="_blank" rel="noreferrer">
+            {BUILT_BY.name}
+          </a>
+        </span>
+      </footer>
     </div>
   )
 }

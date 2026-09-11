@@ -185,6 +185,29 @@ main {
   font-size: 0.875rem;
 }
 
+.site-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.site-footer a {
+  color: #6b7280;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.site-footer a:hover {
+  color: #16213e;
+  text-decoration: underline;
+}
+
 @media (max-width: 700px) {
   main {
     flex-direction: column;
