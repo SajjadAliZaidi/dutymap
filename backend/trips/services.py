@@ -23,17 +23,16 @@ def resolve_stop_coordinates(trip, validated_data):
     return coords
 
 
-def _generate_log_sheets(trip):
+def _generate_log_sheets(trip, legs):
     """Compute HOS segments, split by calendar day, render SVGs, save to trip.logs."""
-    if (
-        trip.duration_hours is None
-        or trip.distance_miles is None
-        or trip.start_datetime is None
-    ):
+    if trip.start_datetime is None or len(legs) != 2:
         return
 
+    leg1, leg2 = legs
     segments = calculate_hos(
-        trip.duration_hours, trip.distance_miles, trip.current_cycle_used
+        leg1["duration_hours"], leg1["distance_miles"],
+        leg2["duration_hours"], leg2["distance_miles"],
+        trip.current_cycle_used,
     )
     if not segments:
         return
@@ -65,7 +64,7 @@ def process_trip(trip, validated_data):
     trip.distance_miles = route["distance_miles"]
     trip.duration_hours = route["duration_hours"]
 
-    _generate_log_sheets(trip)
+    _generate_log_sheets(trip, route["legs"])
 
     trip.save()
 

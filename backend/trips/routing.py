@@ -71,12 +71,16 @@ def fetch_route(coords: list[dict]) -> dict:
     """Get driving route from OSRM.
 
     coords: list of {"lat": ..., "lon": ...} in order.
-    Returns {"geometry": GeoJSON, "distance_miles": float, "duration_hours": float}.
+    Returns {"geometry": GeoJSON, "distance_miles": float, "duration_hours": float,
+    "legs": [{"distance_miles": float, "duration_hours": float}, ...]}.
+    ``legs`` has one entry per consecutive waypoint pair, in the same order as
+    ``coords`` (e.g. for [current, pickup, dropoff]: leg 0 = current->pickup,
+    leg 1 = pickup->dropoff).
     Raises RoutingError on failure.
     """
 
     coord_str = ";".join(f"{c['lon']},{c['lat']}" for c in coords)
-    url = f"{OSRM_URL}/{coord_str}?overview=full&geometries=geojson"
+    url = f"{OSRM_URL}/{coord_str}?overview=simplified&geometries=geojson"
 
     try:
         resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT_SECONDS)
@@ -95,4 +99,11 @@ def fetch_route(coords: list[dict]) -> dict:
         "geometry": route["geometry"],
         "distance_miles": round(route["distance"] / 1609.344, 1),
         "duration_hours": round(route["duration"] / 3600, 2),
+        "legs": [
+            {
+                "distance_miles": round(leg["distance"] / 1609.344, 1),
+                "duration_hours": round(leg["duration"] / 3600, 2),
+            }
+            for leg in route.get("legs", [])
+        ],
     }
