@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from .exceptions import GeocodingError, RoutingError
 from .models import Trip
 from .serializers import TripSerializer
 from .routing import geocode, fetch_route
@@ -21,31 +22,28 @@ def create_trip(request):
         "dropoff": trip.dropoff_location,
     }
     coords = {}
-    errors = []
 
     for key, loc in locations.items():
-        result = geocode(loc)
-        if result is None:
-            errors.append(f"Could not geocode {key} location: {loc}")
-        else:
-            coords[key] = result
-
-    if len(coords) < 3:
-        trip.route_error = "; ".join(errors)
-        trip.save()
-        return Response(TripSerializer(trip).data, status=status.HTTP_201_CREATED)
+        try:
+            coords[key] = geocode(loc)
+        except GeocodingError as e:
+            trip.route_error = str(e)
+            trip.save()
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     # Save coordinates
     trip.current_coords = {"lat": coords["current"]["lat"], "lon": coords["current"]["lon"]}
     trip.pickup_coords = {"lat": coords["pickup"]["lat"], "lon": coords["pickup"]["lon"]}
     trip.dropoff_coords = {"lat": coords["dropoff"]["lat"], "lon": coords["dropoff"]["lon"]}
+    trip.save()
 
     # Fetch driving route
-    route = fetch_route([coords["current"], coords["pickup"], coords["dropoff"]])
-    if route is None:
-        trip.route_error = "Could not calculate driving route"
+    try:
+        route = fetch_route([coords["current"], coords["pickup"], coords["dropoff"]])
+    except RoutingError as e:
+        trip.route_error = str(e)
         trip.save()
-        return Response(TripSerializer(trip).data, status=status.HTTP_201_CREATED)
+        return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
     trip.route_geometry = route["geometry"]
     trip.distance_miles = route["distance_miles"]

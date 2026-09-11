@@ -36,7 +36,7 @@ function App() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.detail || JSON.stringify(data))
+        setError(data.error || data.detail || JSON.stringify(data))
         return
       }
       console.log('Trip response:', data)
