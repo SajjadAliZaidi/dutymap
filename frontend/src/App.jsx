@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import TripMap from './TripMap'
 import './App.css'
 
 const API_URL = 'http://localhost:8000/api/trips/'
@@ -11,6 +12,8 @@ function App() {
     current_cycle_used: '',
   })
   const [loading, setLoading] = useState(false)
+  const [tripData, setTripData] = useState(null)
+  const [error, setError] = useState(null)
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -19,6 +22,8 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
+    setTripData(null)
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
@@ -29,11 +34,18 @@ function App() {
         }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.detail || JSON.stringify(data))
+        return
+      }
       console.log('Trip response:', data)
-      alert('Trip created! Check console for response.')
+      setTripData(data)
+      if (data.route?.error) {
+        setError(data.route.error)
+      }
     } catch (err) {
       console.error('Error creating trip:', err)
-      alert('Failed to create trip. Is the backend running?')
+      setError('Failed to connect to backend. Is it running on port 8000?')
     } finally {
       setLoading(false)
     }
@@ -45,6 +57,13 @@ function App() {
         <h1>DutyMap</h1>
         <p>ELD Trip Planner</p>
       </header>
+
+      {error && (
+        <div className="error-banner">
+          <span>{error}</span>
+          <button onClick={() => setError(null)}>&times;</button>
+        </div>
+      )}
 
       <main>
         <form onSubmit={handleSubmit} className="trip-form">
@@ -106,11 +125,8 @@ function App() {
           </button>
         </form>
 
-        <div className="placeholders">
-          <div className="placeholder-box">
-            <h3>Map</h3>
-            <p>Route visualization will go here</p>
-          </div>
+        <div className="right-panel">
+          <TripMap route={tripData?.route} />
           <div className="placeholder-box">
             <h3>Log Sheets</h3>
             <p>ELD log sheets will go here</p>
