@@ -1,16 +1,61 @@
-# React + Vite
+# DutyMap Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite single-page app for the DutyMap ELD trip planner.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## React Compiler
+The dev server runs on `http://localhost:5173`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Environment variables
 
-## Expanding the Oxlint configuration
+| Variable      | Required | Default                        | Description                    |
+| ------------- | -------- | ------------------------------ | ------------------------------ |
+| `VITE_API_BASE` | No     | `http://localhost:8000/api`    | Backend API base URL           |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Create a `.env` file in `frontend/` to override:
+
+```
+VITE_API_BASE=http://localhost:8000/api
+```
+
+## Scripts
+
+| Command           | Description                  |
+| ----------------- | ---------------------------- |
+| `npm run dev`     | Start Vite dev server        |
+| `npm run build`   | Production build to `dist/`  |
+| `npm run lint`    | Run oxlint                   |
+| `npm run preview` | Preview production build     |
+
+## Component overview
+
+| Component         | File               | Purpose                                                         |
+| ----------------- | ------------------ | --------------------------------------------------------------- |
+| `App`             | `App.jsx`          | Main layout: form row on top, map + log sheets below            |
+| `TripMap`         | `TripMap.jsx`      | Leaflet map showing the route, markers, and distance stats      |
+| `LogSheets`       | `LogSheets.jsx`    | Tabbed viewer for the SVG daily log sheets from the API         |
+| `LocationField`   | `LocationField.jsx`| Location input with toggle between place name and lat/lon entry |
+| `AutocompleteInput` | `AutocompleteInput.jsx` | Address search with Nominatim autocomplete dropdown     |
+
+## Layout
+
+The app uses a viewport-height layout (`100vh`):
+
+- **Top row** — compact form with three location inputs on the left (60%) and cycle hours, start datetime, and submit button on the right (40%)
+- **Bottom row** — map panel (5/12 width) and log sheet panel (7/12 width) sharing the remaining height
+- On viewports narrower than 768px, everything stacks vertically
+
+## API calls
+
+All backend communication goes through `src/api.js`:
+
+- `createTrip(payload)` — `POST /api/trips/`
+- `searchLocations(query)` — `GET /api/geocode/?q=<query>`
+
+Both return parsed JSON or throw `ApiError` with a human-readable message.
