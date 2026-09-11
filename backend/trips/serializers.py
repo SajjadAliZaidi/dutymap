@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .branding import BUILT_BY
+from .constants import LOCATION_FIELDS
 from .models import Trip
 
 
@@ -27,12 +28,6 @@ class TripSerializer(serializers.ModelSerializer):
         required=False, write_only=True, min_value=-180, max_value=180
     )
 
-    LOCATION_FIELDS = (
-        ("current_location", "current_lat", "current_lon", "Current"),
-        ("pickup_location", "pickup_lat", "pickup_lon", "Pickup"),
-        ("dropoff_location", "dropoff_lat", "dropoff_lon", "Dropoff"),
-    )
-
     class Meta:
         model = Trip
         fields = [
@@ -56,28 +51,27 @@ class TripSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         errors = {}
-        for loc_field, lat_field, lon_field, label in self.LOCATION_FIELDS:
-            has_place = bool((attrs.get(loc_field) or "").strip())
-            has_lat = lat_field in attrs
-            has_lon = lon_field in attrs
+        for field in LOCATION_FIELDS:
+            has_place = bool((attrs.get(field.location) or "").strip())
+            has_lat = field.lat in attrs
+            has_lon = field.lon in attrs
 
             if has_lat != has_lon:
-                missing = lat_field if not has_lat else lon_field
-                errors[missing] = (
-                    f"Provide both latitude and longitude for the {label.lower()} location."
+                errors[field.lat if not has_lat else field.lon] = (
+                    f"Provide both latitude and longitude for the {field.label.lower()} location."
                 )
             elif not has_place and not (has_lat and has_lon):
-                errors[loc_field] = (
-                    f"Provide a place name or coordinates for the {label.lower()} location."
+                errors[field.location] = (
+                    f"Provide a place name or coordinates for the {field.label.lower()} location."
                 )
         if errors:
             raise serializers.ValidationError(errors)
         return attrs
 
     def create(self, validated_data):
-        for _, lat_field, lon_field, _ in self.LOCATION_FIELDS:
-            validated_data.pop(lat_field, None)
-            validated_data.pop(lon_field, None)
+        for field in LOCATION_FIELDS:
+            validated_data.pop(field.lat, None)
+            validated_data.pop(field.lon, None)
         return super().create(validated_data)
 
     def get_meta(self, obj):

@@ -1,107 +1,56 @@
 import { useState } from 'react'
+import LocationField from './LocationField'
 import TripMap from './TripMap'
+import { createTrip } from './api'
 import { BUILT_BY } from './branding'
+import { LOCATIONS, buildTripPayload, emptyCoords, emptyModes, validateCoords } from './tripForm'
 import './App.css'
 
-const API_URL = 'http://localhost:8000/api/trips/'
-
-const formatApiError = (data) => {
-  if (!data) return 'Request failed'
-  if (typeof data === 'string') return data
-  if (data.error) return data.error
-  if (data.detail) return data.detail
-  return Object.entries(data)
-    .map(([field, msgs]) => {
-      const text = Array.isArray(msgs) ? msgs.join(' ') : msgs
-      return `${field.replace(/_/g, ' ')}: ${text}`
-    })
-    .join('; ')
+const EMPTY_FORM = {
+  current_location: '',
+  pickup_location: '',
+  dropoff_location: '',
+  current_cycle_used: '',
 }
 
 function App() {
-  const [form, setForm] = useState({
-    current_location: '',
-    pickup_location: '',
-    dropoff_location: '',
-    current_cycle_used: '',
-  })
-  const [coordMode, setCoordMode] = useState({
-    current: 'place',
-    pickup: 'place',
-    dropoff: 'place',
-  })
-  const [coords, setCoords] = useState({
-    current: { lat: '', lon: '' },
-    pickup: { lat: '', lon: '' },
-    dropoff: { lat: '', lon: '' },
-  })
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [modes, setModes] = useState(emptyModes)
+  const [coords, setCoords] = useState(emptyCoords)
   const [loading, setLoading] = useState(false)
   const [tripData, setTripData] = useState(null)
   const [error, setError] = useState(null)
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+  const handlePlaceChange = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleCoordChange = (field, axis, value) => {
-    setCoords({
-      ...coords,
-      [field]: { ...coords[field], [axis]: value },
-    })
+  const handleCycleChange = (value) => {
+    setForm((prev) => ({ ...prev, current_cycle_used: value }))
   }
 
-  const validateCoords = () => {
-    for (const [field, label] of [['current', 'Current'], ['pickup', 'Pickup'], ['dropoff', 'Dropoff']]) {
-      if (coordMode[field] !== 'latlong') continue
-      const lat = parseFloat(coords[field].lat)
-      const lon = parseFloat(coords[field].lon)
-      if (isNaN(lat) || isNaN(lon)) {
-        return `${label} coordinates must be valid numbers`
-      }
-      if (lat < -90 || lat > 90) {
-        return `${label} latitude must be between -90 and 90`
-      }
-      if (lon < -180 || lon > 180) {
-        return `${label} longitude must be between -180 and 180`
-      }
-    }
-    return null
+  const handleModeChange = (key, mode) => {
+    setModes((prev) => ({ ...prev, [key]: mode }))
+  }
+
+  const handleCoordChange = (key, axis, value) => {
+    setCoords((prev) => ({ ...prev, [key]: { ...prev[key], [axis]: value } }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError(null)
 
-    const coordError = validateCoords()
+    const coordError = validateCoords(modes, coords)
     if (coordError) {
       setError(coordError)
       return
     }
 
+    setError(null)
     setLoading(true)
     setTripData(null)
     try {
-      const body = {
-        ...form,
-        current_cycle_used: parseFloat(form.current_cycle_used),
-      }
-      for (const field of ['current', 'pickup', 'dropoff']) {
-        if (coordMode[field] === 'latlong') {
-          body[`${field}_location`] = ''
-          body[`${field}_lat`] = parseFloat(coords[field].lat)
-          body[`${field}_lon`] = parseFloat(coords[field].lon)
-        }
-      }
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(formatApiError(data))
-        return
-      }
+      const data = await createTrip(buildTripPayload(form, modes, coords))
       console.log('Trip response:', data)
       setTripData(data)
       if (data.route?.error) {
@@ -109,7 +58,7 @@ function App() {
       }
     } catch (err) {
       console.error('Error creating trip:', err)
-      setError('Failed to connect to backend. Is it running on port 8000?')
+      setError(err.message)
     } finally {
       setLoading(false)
     }
@@ -133,80 +82,17 @@ function App() {
         <form onSubmit={handleSubmit} className="trip-form">
           <h2>New Trip</h2>
 
-          {[
-            { key: 'current', label: 'Current Location', name: 'current_location', placeholder: 'e.g. Dallas, TX' },
-            { key: 'pickup', label: 'Pickup Location', name: 'pickup_location', placeholder: 'e.g. Houston, TX' },
-            { key: 'dropoff', label: 'Dropoff Location', name: 'dropoff_location', placeholder: 'e.g. Chicago, IL' },
-          ].map(({ key, label, name, placeholder }) => (
-            <fieldset key={key} className="location-fieldset">
-              <div className="location-header">
-                <label className="location-label">{label}</label>
-                <div className="mode-switch" data-active={coordMode[key]}>
-                  <span className="mode-switch-thumb" aria-hidden="true" />
-                  <button
-                    type="button"
-                    className={`mode-switch-btn ${coordMode[key] === 'place' ? 'active' : ''}`}
-                    onClick={() => setCoordMode({ ...coordMode, [key]: 'place' })}
-                    aria-label={`${label}: enter a place name`}
-                    aria-pressed={coordMode[key] === 'place'}
-                    title="Search by place name"
-                  >
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
-                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    className={`mode-switch-btn ${coordMode[key] === 'latlong' ? 'active' : ''}`}
-                    onClick={() => setCoordMode({ ...coordMode, [key]: 'latlong' })}
-                    aria-label={`${label}: enter latitude and longitude`}
-                    aria-pressed={coordMode[key] === 'latlong'}
-                    title="Enter latitude / longitude"
-                  >
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
-                      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              {coordMode[key] === 'place' ? (
-                <input
-                  type="text"
-                  name={name}
-                  value={form[name]}
-                  onChange={handleChange}
-                  placeholder={placeholder}
-                  required
-                />
-              ) : (
-                <div className="coord-inputs">
-                  <input
-                    type="number"
-                    placeholder="Lat"
-                    value={coords[key].lat}
-                    onChange={(e) => handleCoordChange(key, 'lat', e.target.value)}
-                    min="-90"
-                    max="90"
-                    step="any"
-                    aria-label={`${label} latitude in decimal degrees`}
-                    title="Latitude in decimal degrees — positive is North, negative is South (e.g. 32.7767 or -33.8688)"
-                    required
-                  />
-                  <input
-                    type="number"
-                    placeholder="Lon"
-                    value={coords[key].lon}
-                    onChange={(e) => handleCoordChange(key, 'lon', e.target.value)}
-                    min="-180"
-                    max="180"
-                    step="any"
-                    aria-label={`${label} longitude in decimal degrees`}
-                    title="Longitude in decimal degrees — positive is East, negative is West (e.g. -96.7970 or 151.2093)"
-                    required
-                  />
-                </div>
-              )}
-            </fieldset>
+          {LOCATIONS.map((field) => (
+            <LocationField
+              key={field.key}
+              field={field}
+              mode={modes[field.key]}
+              coords={coords[field.key]}
+              value={form[field.name]}
+              onModeChange={(mode) => handleModeChange(field.key, mode)}
+              onPlaceChange={handlePlaceChange}
+              onCoordChange={(axis, value) => handleCoordChange(field.key, axis, value)}
+            />
           ))}
 
           <label>
@@ -215,7 +101,7 @@ function App() {
               type="number"
               name="current_cycle_used"
               value={form.current_cycle_used}
-              onChange={handleChange}
+              onChange={(e) => handleCycleChange(e.target.value)}
               placeholder="e.g. 8.5"
               step="0.5"
               min="0"

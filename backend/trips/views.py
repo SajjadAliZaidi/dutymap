@@ -1,10 +1,10 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
 from .exceptions import GeocodingError, RoutingError
-from .models import Trip
 from .serializers import TripSerializer
-from .routing import geocode, fetch_route
+from .services import process_trip
 
 
 @api_view(["POST"])
@@ -15,44 +15,16 @@ def create_trip(request):
 
     trip = serializer.save()
 
-    # Resolve coordinates — use provided lat/lon or geocode the place name
-    fields = {
-        "current": ("current_location", "current_lat", "current_lon"),
-        "pickup": ("pickup_location", "pickup_lat", "pickup_lon"),
-        "dropoff": ("dropoff_location", "dropoff_lat", "dropoff_lon"),
-    }
-    coords = {}
-
-    for key, (loc_field, lat_field, lon_field) in fields.items():
-        lat = serializer.validated_data.get(lat_field)
-        lon = serializer.validated_data.get(lon_field)
-        if lat is not None and lon is not None:
-            coords[key] = {"lat": lat, "lon": lon, "display_name": f"{lat}, {lon}"}
-        else:
-            try:
-                coords[key] = geocode(trip.__getattribute__(loc_field))
-            except GeocodingError as e:
-                trip.route_error = str(e)
-                trip.save()
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Save coordinates
-    trip.current_coords = {"lat": coords["current"]["lat"], "lon": coords["current"]["lon"]}
-    trip.pickup_coords = {"lat": coords["pickup"]["lat"], "lon": coords["pickup"]["lon"]}
-    trip.dropoff_coords = {"lat": coords["dropoff"]["lat"], "lon": coords["dropoff"]["lon"]}
-    trip.save()
-
-    # Fetch driving route
     try:
-        route = fetch_route([coords["current"], coords["pickup"], coords["dropoff"]])
-    except RoutingError as e:
+        process_trip(trip, serializer.validated_data)
+    except (GeocodingError, RoutingError) as e:
         trip.route_error = str(e)
         trip.save()
-        return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
-
-    trip.route_geometry = route["geometry"]
-    trip.distance_miles = route["distance_miles"]
-    trip.duration_hours = route["duration_hours"]
-    trip.save()
+        code = (
+            status.HTTP_400_BAD_REQUEST
+            if isinstance(e, GeocodingError)
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        return Response({"error": str(e)}, status=code)
 
     return Response(TripSerializer(trip).data, status=status.HTTP_201_CREATED)
