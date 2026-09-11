@@ -47,7 +47,7 @@ def search_locations(query: str, limit: int = 5) -> list[dict]:
     try:
         resp = requests.get(
             NOMINATIM_URL,
-            params={"q": query, "format": "json", "limit": limit},
+            params={"q": query, "format": "json", "limit": limit, "accept-language": "en"},
             headers=HEADERS,
             timeout=TIMEOUT_SECONDS,
         )
