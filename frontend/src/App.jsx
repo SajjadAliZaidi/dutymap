@@ -6,11 +6,19 @@ import { BUILT_BY } from './branding'
 import { LOCATIONS, buildTripPayload, emptyCoords, emptyModes, validateCoords } from './tripForm'
 import './App.css'
 
+function defaultStartDatetime() {
+  const now = new Date()
+  const offset = now.getTimezoneOffset()
+  const local = new Date(now.getTime() - offset * 60_000)
+  return local.toISOString().slice(0, 16)
+}
+
 const EMPTY_FORM = {
   current_location: '',
   pickup_location: '',
   dropoff_location: '',
   current_cycle_used: '',
+  start_datetime: defaultStartDatetime(),
 }
 
 function App() {
@@ -39,6 +47,11 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!form.start_datetime) {
+      setError('Trip start date & time is required')
+      return
+    }
 
     const coordError = validateCoords(modes, coords)
     if (coordError) {
@@ -106,6 +119,17 @@ function App() {
               step="0.5"
               min="0"
               max="70"
+              required
+            />
+          </label>
+
+          <label>
+            Trip Start Date &amp; Time
+            <input
+              type="datetime-local"
+              name="start_datetime"
+              value={form.start_datetime}
+              onChange={(e) => handlePlaceChange('start_datetime', e.target.value)}
               required
             />
           </label>

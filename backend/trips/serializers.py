@@ -8,6 +8,7 @@ class TripSerializer(serializers.ModelSerializer):
     route = serializers.SerializerMethodField()
     logs = serializers.ListField(default=list, read_only=True)
     meta = serializers.SerializerMethodField()
+    start_datetime = serializers.DateTimeField(required=True)
 
     current_lat = serializers.FloatField(
         required=False, write_only=True, min_value=-90, max_value=90
@@ -36,6 +37,7 @@ class TripSerializer(serializers.ModelSerializer):
             "pickup_location",
             "dropoff_location",
             "current_cycle_used",
+            "start_datetime",
             "created_at",
             "current_lat",
             "current_lon",

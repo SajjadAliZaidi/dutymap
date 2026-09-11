@@ -6,6 +6,7 @@ class Trip(models.Model):
     pickup_location = models.CharField(max_length=255, blank=True)
     dropoff_location = models.CharField(max_length=255, blank=True)
     current_cycle_used = models.FloatField(help_text="Hours used in current cycle")
+    start_datetime = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Route data (populated after geocoding + OSRM)
