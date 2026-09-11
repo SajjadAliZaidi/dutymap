@@ -208,6 +208,26 @@ main {
   text-decoration: underline;
 }
 
+.footer-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.footer-social {
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-social svg {
+  display: block;
+}
+
+.site-footer .footer-social:hover {
+  color: #16213e;
+  text-decoration: none;
+}
+
 @media (max-width: 700px) {
   main {
     flex-direction: column;

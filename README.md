@@ -69,4 +69,4 @@ The response includes the trip inputs, a `route` object (GeoJSON geometry, dista
 
 ## Credit
 
-Built by **[Sajjad Zaidi](https://sajjadalizaidi.github.io/)**.
+Built by **[Sajjad Zaidi](https://sajjadalizaidi.github.io/)** · [LinkedIn](https://www.linkedin.com/in/syedmuhammadsajjad/)
