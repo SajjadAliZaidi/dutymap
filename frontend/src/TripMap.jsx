@@ -43,6 +43,33 @@ export default function TripMap({ route }) {
     [route],
   )
 
+  const { outboundLeg, inboundLeg } = useMemo(() => {
+    const coords = route?.geometry?.coordinates
+    const pickup = route?.coordinates?.pickup
+    if (!coords?.length || !pickup) return { outboundLeg: [], inboundLeg: [] }
+
+    const latlngs = coords.map(([lon, lat]) => [lat, lon])
+
+    let bestIdx = 0
+    let bestDist = Infinity
+    for (let i = 0; i < latlngs.length; i++) {
+      const [lat, lon] = latlngs[i]
+      const d = (lat - pickup.lat) ** 2 + (lon - pickup.lon) ** 2
+      if (d < bestDist) {
+        bestDist = d
+        bestIdx = i
+      }
+    }
+
+    const outbound = latlngs.slice(0, bestIdx + 1)
+    const inbound = latlngs.slice(bestIdx)
+
+    if (outbound.length < 2 || inbound.length < 2) {
+      return { outboundLeg: [], inboundLeg: [] }
+    }
+    return { outboundLeg: outbound, inboundLeg: inbound }
+  }, [route])
+
   if (positions.length === 0) {
     return (
       <div className="map-placeholder">
@@ -74,13 +101,37 @@ export default function TripMap({ route }) {
         <Marker position={positions[2]} icon={markerIcons.dropoff}>
           <Popup>Dropoff</Popup>
         </Marker>
-        {polylineCoords.length > 0 && (
+        {outboundLeg.length > 0 && (
+          <Polyline
+            positions={outboundLeg}
+            pathOptions={{ color: '#1976D2', weight: 4, opacity: 0.9 }}
+          />
+        )}
+        {inboundLeg.length > 0 && (
+          <Polyline
+            positions={inboundLeg}
+            pathOptions={{ color: '#E65100', weight: 4, opacity: 0.9, dashArray: '8, 6' }}
+          />
+        )}
+        {outboundLeg.length === 0 && inboundLeg.length === 0 && polylineCoords.length > 0 && (
           <Polyline
             positions={polylineCoords}
-            pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.8 }}
+            pathOptions={{ color: '#1976D2', weight: 4, opacity: 0.8 }}
           />
         )}
       </MapContainer>
+      {(outboundLeg.length > 0 || inboundLeg.length > 0) && (
+        <div className="route-legend">
+          <div className="route-legend-item">
+            <svg width="24" height="6" viewBox="0 0 24 6"><line x1="0" y1="3" x2="24" y2="3" stroke="#1976D2" strokeWidth="3" /></svg>
+            <span>Current → Pickup</span>
+          </div>
+          <div className="route-legend-item">
+            <svg width="24" height="6" viewBox="0 0 24 6"><line x1="0" y1="3" x2="24" y2="3" stroke="#E65100" strokeWidth="3" strokeDasharray="4,3" /></svg>
+            <span>Pickup → Dropoff</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -230,6 +230,30 @@ main {
   gap: 1rem;
 }
 
+.route-legend {
+  position: absolute;
+  bottom: 30px;
+  left: 10px;
+  z-index: 1000;
+  background: rgba(255,255,255,0.95);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #16213e;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.route-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
 .map-placeholder {
   background: #fff;
   border-radius: 8px;
