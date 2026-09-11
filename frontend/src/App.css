@@ -1,0 +1,132 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f0f2f5;
+  color: #1a1a2e;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2rem;
+  color: #16213e;
+}
+
+header p {
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+main {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.trip-form {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.trip-form h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.trip-form label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.trip-form input {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.trip-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+
+.trip-form button {
+  width: 100%;
+  padding: 0.7rem;
+  background: #16213e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.trip-form button:hover {
+  background: #1a1a2e;
+}
+
+.trip-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.placeholders {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.placeholder-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  text-align: center;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #d1d5db;
+}
+
+.placeholder-box h3 {
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.placeholder-box p {
+  color: #999;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 700px) {
+  main {
+    flex-direction: column;
+  }
+}
